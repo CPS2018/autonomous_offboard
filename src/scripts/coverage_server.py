@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 import rospy
 import actionlib
-import simulation_control.msg
+import autonomous_offboard.msg
 import numpy as np
 import time
 import math
@@ -28,7 +28,7 @@ class coverage_server():
         self.detect_object_client = actionlib.SimpleActionClient('detect_object', detect_objectAction)
         self.rate = rospy.Rate(20)
         self.action_server = actionlib.SimpleActionServer('coverage',
-                                                          simulation_control.msg.coverageAction,
+                                                          autonomous_offboard.msg.coverageAction,
                                                           execute_cb=self.execute_cb, auto_start=False)
         self.action_server.start()
 

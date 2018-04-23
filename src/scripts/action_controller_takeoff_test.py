@@ -7,7 +7,7 @@ import actionlib
 import mavros_state
 import time
 
-from simulation_control.msg import center_on_objectAction,  center_on_objectGoal, descend_on_objectAction, descend_on_objectGoal, detect_objectAction, detect_objectGoal, goto_positionAction, goto_positionGoal, short_grippersAction, short_grippersGoal, long_grippersAction, long_grippersGoal, coverageAction, coverageGoal
+from autonomous_offboard.msg import center_on_objectAction,  center_on_objectGoal, descend_on_objectAction, descend_on_objectGoal, detect_objectAction, detect_objectGoal, goto_positionAction, goto_positionGoal, short_grippersAction, short_grippersGoal,takeoff_currAction, takeoff_currGoal, long_grippersAction, long_grippersGoal, coverageAction, coverageGoal
 
 from std_msgs.msg import Float32
 from geometry_msgs.msg import PoseStamped
@@ -18,17 +18,9 @@ if __name__ == '__main__':
     print 'Setting offboard'
     mv_state.set_mode('OFFBOARD')
     print 'Arming vehicle'
+    print 'Takeoff'
     mv_state.arm(True)
-    time.sleep(5)
-    rospy.loginfo("Taking off")
-    goto_position_client = actionlib.SimpleActionClient('goto_position', goto_positionAction)
-    goto_position_client.wait_for_server()
-    goto_position_goal = goto_positionGoal()
-    goto_position_goal.destination.pose.position.z = 2
-    goto_position_client.send_goal(goto_position_goal)
-    goto_position_client.wait_for_result()
-    rospy.loginfo("Takeoff succeded")
-
-    time.sleep(10)
-
+    print 'Sleeping 20 sec'
+    time.sleep(20)
+    print 'Landing'
     mv_state.land(0.0)

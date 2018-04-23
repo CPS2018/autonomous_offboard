@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 import rospy
 import actionlib
-import simulation_control.msg
+import autonomous_offboard.msg
 from std_msgs.msg import Bool, String
 
 from geometry_msgs.msg import PoseStamped
@@ -19,7 +19,7 @@ class goto_position_server():
 
         self.rate = rospy.Rate(20)
         #self.result = simulation_control.msg.goto_positionResult()
-        self.action_server = actionlib.SimpleActionServer('goto_position', simulation_control.msg.goto_positionAction,
+        self.action_server = actionlib.SimpleActionServer('goto_position', autonomous_offboard.msg.goto_positionAction,
                                                           execute_cb=self.execute_cb, auto_start=False)
         self.action_server.start()
 

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 import rospy
 import actionlib
-import simulation_control.msg
+import autonomous_offboard.msg
 
 from geometry_msgs.msg import PoseStamped, Point
 class detect_object_server():
@@ -20,7 +20,7 @@ class detect_object_server():
 
         self.rate = rospy.Rate(20)
         self.result = simulation_control.msg.detect_objectResult()
-        self.action_server = actionlib.SimpleActionServer('detect_object', simulation_control.msg.detect_objectAction,
+        self.action_server = actionlib.SimpleActionServer('detect_object', autonomous_offboard.msg.detect_objectAction,
                                                           execute_cb=self.execute_cb, auto_start=False)
         self.action_server.start()
 

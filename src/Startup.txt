@@ -13,7 +13,6 @@ terminal3: roslaunch simulation_control simulation_control.launch
 
 ready to fly
 
-
 Start Rosserial with sensor controller
 
 rosrun rosserial_python serial_node.py -port:=/dev/USB0

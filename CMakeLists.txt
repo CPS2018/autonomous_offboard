@@ -71,6 +71,7 @@ add_action_files(
   FILES
   goto_position.action
   goto_position_vel.action
+  takeoff_curr.action
   detect_object.action
   center_on_object.action
   descend_on_object.action

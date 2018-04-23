@@ -3,7 +3,7 @@
 import roslib
 import rospy
 import actionlib
-import simulation_control.msg
+import autonomous_offboard.msg
 import time
 
 from std_msgs.msg import Float32
@@ -20,7 +20,7 @@ class long_grippers_server():
         self.rate = rospy.Rate(20)
         self.result = simulation_control.msg.long_grippersResult()
         self.server = actionlib.SimpleActionServer('long_grippers',
-                                                    simulation_control.msg.long_grippersAction,
+                                                   autonomous_offboard.msg.long_grippersAction,
                                                     execute_cb=self.execute_cb,
                                                     auto_start=False)
         self.server.start()

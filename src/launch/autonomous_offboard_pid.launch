@@ -1,6 +1,6 @@
 <launch>
   <node name="position_control" pkg="autonomous_offboard" type="position_control.py" output="screen" />
-  <node name="action_controller_takeoff_test" pkg="autonomous_offboard" type="action_controller_takeoff_test.py" output="screen" />
+  <node name="action_controller_pid" pkg="autonomous_offboard" type="action_controller_pid.py" output="screen" />
   <node name="goto_position_server" pkg="autonomous_offboard" type="goto_position_server.py" output="screen" />
   <node name="goto_position_vel_server" pkg="autonomous_offboard" type="goto_position_vel_server.py" output="screen" />
   <node name="obstacle_detection_control" pkg="simulation_control" type="obstacle_detection_control.py" output="screen" />

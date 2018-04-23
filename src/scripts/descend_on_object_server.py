@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 import rospy
 import actionlib
-import simulation_control.msg
+import autonomous_offboard.msg
 from geometry_msgs.msg import PoseStamped, Point
 from std_msgs.msg import Bool, String
 import time
@@ -29,7 +29,7 @@ class descend_on_object_server():
         self.rate = rospy.Rate(20)
         self.result = simulation_control.msg.descend_on_objectResult()
         self.action_server = actionlib.SimpleActionServer('descend_on_object',
-                                                          simulation_control.msg.descend_on_objectAction,
+                                                          autonomous_offboard.msg.descend_on_objectAction,
                                                           execute_cb=self.execute_cb,
                                                           auto_start=False)
         self.last_object_pose = Point()
