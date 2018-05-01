@@ -78,6 +78,7 @@ add_action_files(
   short_grippers.action
   long_grippers.action
   coverage.action
+  gotoposition_sensor.action
  )
 
 ## Generate added messages and services with any dependencies listed here

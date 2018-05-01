@@ -29,11 +29,11 @@ from stuff.helper import FPS2, WebcamVideoStream, SessionWorker
 
 import time
 import sys
-sys.path.insert(0, '/home/nvidia/catkin_ws/src/uav_hw_camera/src/scripts/')
+sys.path.insert(0, '/home/nvidia/catkin_ws/src/autonomous_offboard/src/scripts/')
 
 ## LOAD CONFIG PARAMS ##
-if (os.path.isfile('/home/nvidia/catkin_ws/src/uav_hw_camera/src/scripts/config.yml')):
-    with open("/home/nvidia/catkin_ws/src/uav_hw_camera/src/scripts/config.yml", 'r') as ymlfile:
+if (os.path.isfile('/home/nvidia/catkin_ws/src/autonomous_offboard/src/scripts/config.yml')):
+    with open("/home/nvidia/catkin_ws/src/autonomous_offboard/src/scripts/config.yml", 'r') as ymlfile:
         cfg = yaml.load(ymlfile)
 else:
     with open("config.sample.yml", 'r') as ymlfile:
@@ -67,7 +67,7 @@ class tensorflow_detection:
             with tf.Session(graph=self.detection_graph, config=config) as self.sess:
                 self.cam_read = Image()
                 # topic where we publish
-                self.image_pub = rospy.Publisher("/tensorflow_detection/image", Image, queue_size=10)
+                #self.image_pub = rospy.Publisher("/tensorflow_detection/image", Image, queue_size=10)
                 self.bridge = CvBridge()
                 # topic where the coordinates go
                 self.cam_pose_pub = rospy.Publisher("/tensorflow_detection/cam_point", Point, queue_size=1)
@@ -75,7 +75,7 @@ class tensorflow_detection:
                 self.cam_pose_center_pub = rospy.Publisher("/tensorflow_detection/cam_point_center", Point, queue_size=1)
                 self.cam_pose_center = Point()
                 # subscribed Topic
-                self.subscriber = rospy.Subscriber("/mv_29901984/image_raw", Image, self.callback, queue_size=1)
+                self.subscriber = rospy.Subscriber("/mv_29901972/image_raw", Image, self.callback, queue_size=1)
 
                 #self.detection(graph, category, score, expand)
 
@@ -153,10 +153,10 @@ class tensorflow_detection:
             self.cam_pose_center.y = float("inf")
             self.cam_pose_center.z = float("inf")
             self.cam_pose_center_pub.publish(self.cam_pose_center)
-        try:
-            self.image_pub.publish(self.bridge.cv2_to_imgmsg(cv_image, "bgr8"))
-        except CvBridgeError as e:
-            print(e)
+        #try:
+        #    self.image_pub.publish(self.bridge.cv2_to_imgmsg(cv_image, "bgr8"))
+        #except CvBridgeError as e:
+        #    print(e)
     def find_relative_pose(self, x, y, w, h):
         quad_3d = np.float32([[-0.345, -0.345, 0], [0.345, -0.345, 0], [0.345, 0.345, 0], [-0.345, 0.345, 0]])
         quad = np.float32(
@@ -357,56 +357,6 @@ def main():
 
 if __name__ == '__main__':
     main()
-
-#height, width, _ = cv_image.shape
-#config = tf.ConfigProto(allow_soft_placement=True, log_device_placement=log_device)
-#config.gpu_options.allow_growth = allow_memory_growth
-#with self.graph.as_default():
-#    with tf.Session(graph=self.graph, config=config) as sess:
-#        # Define Input and Ouput tensors
-#        image_tensor = self.graph.get_tensor_by_name('image_tensor:0')
-#        detection_boxes = self.graph.get_tensor_by_name('detection_boxes:0')
-#        detection_scores = self.graph.get_tensor_by_name('detection_scores:0')
-#        detection_classes = self.graph.get_tensor_by_name('detection_classes:0')
-#         num_detections = self.graph.get_tensor_by_name('num_detections:0')
-#
-#         image = cv_image  # video_stream.read()
-#         image_expanded = np.expand_dims(image, axis=0)
-#         boxes, scores, classes, num = sess.run(
-#             [detection_boxes, detection_scores, detection_classes, num_detections],
-#             feed_dict={image_tensor: image_expanded})
-#         vis_util.visualize_boxes_and_labels_on_image_array(
-#             cv_image,
-#             np.squeeze(boxes),
-#             np.squeeze(classes).astype(np.int32),
-#             np.squeeze(scores),
-#             self.category_index,
-#             use_normalized_coordinates=True,
-#             line_thickness=8)
-#         for i in range(0, num_detections):
-#             score = scores[0][i]
-#             if score >= self.threshold:
-#                 ymin = boxes[0][i][0] * height
-#                 xmin = boxes[0][i][1] * width
-#                 ymax = boxes[0][i][2] * height
-#                 xmax = boxes[0][i][3] * width
-#                 centerX = xmin + ((xmax - xmin) / 2)
-#                 centerY = ymin + ((ymax - ymin) / 2)
-#                 print("center x: {}\ncenter y: {}\nwidth: {}\nheight: {}".format(centerX, centerY,
-#                                                                                  (xmax - xmin),
-#                                                                                  (ymax - ymin)))
-#                 self.find_relative_pose(centerX, centerY, (xmax - xmin), (ymax - ymin))
-#             else:
-#                 self.cam_pose = Point()
-#                 self.cam_pose.x = float("inf")
-#                 self.cam_pose.y = float("inf")
-#                 self.cam_pose.z = float("inf")
-#                 self.cam_pose_pub.publish(self.cam_pose)
-#         try:
-#             self.image_pub.publish(self.bridge.cv2_to_imgmsg(cv_image, "bgr8"))
-#         except CvBridgeError as e:
-#             print(e)
-
 
 
 

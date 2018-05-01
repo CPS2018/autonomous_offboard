@@ -4,8 +4,8 @@ video_input: 0              # Input Must be OpenCV readable #0 for webcam
 visualize: True             # Disable for performance increase
 vis_text: True              # Display fps on visualization stream
 max_frames: 5000            # only used if visualize==False
-width: 600                  # OpenCV only supports 4:3 formats others will be converted
-height: 600                 # 600x600 leads to 640x480
+width: 2000                 # OpenCV only supports 4:3 formats others will be converted
+height: 2000                 # 600x600 leads to 640x480
 fps_interval: 5             # Interval [s] to print fps of the last interval in console
 det_interval: 500           # intervall [frames] to print detections to console
 det_th: 0.5                 # detection threshold for det_intervall
@@ -24,6 +24,6 @@ num_trackers: 5             # Max number of objects to track
 
 ## Model
 model_name: 'ssd_mobilenet_v11_coco'
-model_path: '/home/pateman/catkin_ws/src/simulation_control/src/scripts/models/ssd_mobilenet_v11_coco/frozen_inference_graph.pb'
-label_path: '/home/pateman/TensorflowProjects/Test5UavFrame/data/object-detection.pbtxt'
-num_classes: 1
+model_path: '/home/nvidia/catkin_ws/src/autonomous_offboard/src/scripts/models/ssd_mobilenet_v11_coco/frozen_inference_graph.pb'
+label_path: '/home/nvidia/catkin_ws/src/autonomous_offboard/src/scripts/object-detection.pbtxt'
+num_classes: 2

@@ -3,7 +3,7 @@ import rospy
 import actionlib
 import autonomous_offboard.msg
 from geometry_msgs.msg import PoseStamped, Point
-from std_msgs.msg import Bool, String
+from std_msgs.msg import Bool, String, Float32
 import time
 
 
@@ -19,15 +19,19 @@ class descend_on_object_server():
         # publishers
         self.mode_control = rospy.Publisher('/position_control/set_mode', String, queue_size=10)
         self.vel_control = rospy.Publisher('/position_control/set_velocity', PoseStamped, queue_size=10)
+        self.set_xy_vel = rospy.Publisher('/position_control/set_xy_vel', Float32, queue_size=10)
+        self.set_z_vel = rospy.Publisher('/position_control/set_z_vel', Float32, queue_size=10)
 
         # subscribers
         rospy.Subscriber('/tensorflow_detection/cam_point', Point, self.get_cam_pos_callback)
         rospy.Subscriber('/tensorflow_detection/cam_point_center', Point, self.get_cam_pos_center_callback)
-        rospy.Subscriber('/mavros/local_position/pose', PoseStamped, self._local_pose_callback)
+        #rospy.Subscriber('/mavros/local_position/pose', PoseStamped, self._local_pose_callback)
         rospy.Subscriber('/position_control/distance', Bool, self.distance_reached_cb)
 
+        rospy.Subscriber('/position_control/Real_pose', PoseStamped, self._real_pose_callback)
+
         self.rate = rospy.Rate(20)
-        self.result = simulation_control.msg.descend_on_objectResult()
+        self.result = autonomous_offboard.msg.descend_on_objectResult()
         self.action_server = actionlib.SimpleActionServer('descend_on_object',
                                                           autonomous_offboard.msg.descend_on_objectAction,
                                                           execute_cb=self.execute_cb,
@@ -37,6 +41,9 @@ class descend_on_object_server():
         self.action_server.start()
 
     def execute_cb(self, goal):
+        xyVel = Float32()
+        xyVel.data = 0.2
+        self.set_xy_vel.publish(xyVel)
         rospy.loginfo("Starting to descend")
         self.mode_control.publish('velctr')
         rospy.sleep(0.1)
@@ -95,7 +102,7 @@ class descend_on_object_server():
         print("Landing")
         self.des_pose.pose.position.x = 0
         self.des_pose.pose.position.y = 0
-        self.des_pose.pose.position.z = self.local_pose.pose.position.z - 0.4
+        self.des_pose.pose.position.z = -0.1
         self.vel_control.publish(self.des_pose)
         time.sleep(0.1)
         while not self.target_reached:
@@ -121,11 +128,13 @@ class descend_on_object_server():
         else:
             self.detected = False
 
-    def _local_pose_callback(self, data):
-        self.local_pose = data
+   # def _local_pose_callback(self, data):
+    #    self.local_pose = data
 
     def distance_reached_cb(self, data):
         self.target_reached = data.data
+    def _real_pose_callback(self, data):
+        self.local_pose = data
 
 
 if __name__ == '__main__':

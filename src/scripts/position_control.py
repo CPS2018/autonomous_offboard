@@ -1,11 +1,13 @@
 #!/usr/bin/env python
-from geometry_msgs.msg import PoseStamped, TwistStamped, Point
+from geometry_msgs.msg import PoseStamped, TwistStamped, Point, Quaternion
 import rospy
 import math
+import tf
 from std_msgs.msg import Float32, Bool, String
 from VelocityController import VelocityController
 from sensor_msgs.msg import Imu
 import numpy as np
+import copy
 
 
 class position_control():
@@ -17,6 +19,7 @@ class position_control():
         self.lidar_height = 0.0
         self.actual_height = Float32
         self.actual_height = 0.0
+        self.real_pose = PoseStamped()
 
         # ----------Subscribers----------#
         rospy.Subscriber('/position_control/set_mode', String, self.set_mode_callback)
@@ -28,6 +31,9 @@ class position_control():
         rospy.Subscriber('/position_control/set_y_pid', Point, self.set_y_pid)
         rospy.Subscriber('/position_control/set_z_pid', Point, self.set_z_pid)
         rospy.Subscriber('/position_control/set_yaw_pid', Point, self.set_yaw_pid)
+        #Set max output velocity on PID in velocity control
+        rospy.Subscriber('/position_control/set_xy_vel', Float32, self.set_xy_vel)
+        rospy.Subscriber('/position_control/set_z_vel', Float32, self.set_z_vel)
 
         self.local_pose = PoseStamped()
         rospy.Subscriber('/mavros/local_position/pose', PoseStamped, self._local_pose_callback)
@@ -52,15 +58,15 @@ class position_control():
         self._velpose_msg = PoseStamped()
         self._velpose_state = "velposctr"
 
-        # self._velpos_pub = rospy.Publisher('mavros/setpoint_velocity/cmd_vel', TwistStamped, queue_size=10)
-        # self._velpos_msg = TwistStamped()
-        # self._velpos_state = "velposctr"
+
 
         self.dist = rospy.Publisher('/position_control/distance', Bool, queue_size=10)
-        self.real_local_pose = rospy.Publisher('/position_control/local_pose', Float32, queue_size=10)
+        self._real_pose = rospy.Publisher('/position_control/Real_pose', PoseStamped, queue_size=10)
         self.yawangle = rospy.Publisher('/position_control/Yawangle', Float32, queue_size=10)
         self.pitchangle = rospy.Publisher('/position_control/Pitchangle', Float32, queue_size=10)
         self.rollangle = rospy.Publisher('/position_control/Rollangle', Float32, queue_size=10)
+
+        self.pid_out_pub = rospy.Publisher('/position_control/pid_out', TwistStamped, queue_size=10)
 
         self.current_publisher = self._pose_pub
         self.current_message = self._pose_msg
@@ -75,11 +81,11 @@ class position_control():
         self.current_mode.data = 'posctr'
 
         self.vController = VelocityController()
-        self.vController.set_x_pid(1.0, 0.0, 0.0, 5)  # 0.15  #MARCUS: 2.8, 0.913921, 0.0, 1
-        self.vController.set_y_pid(1.0, 0.0, 0.0, 5)  # 2.1, 0.713921, 0.350178 #MARCUS: 2.8, 0.913921, 0.0, 1
-        self.vController.set_z_pid(1.0, 0.0, 0.0, 5)  # 0.15 #MARCUS: 1.3, 2.4893, 0.102084, 1
+        self.vController.set_x_pid(1.0, 0.0, 0.0, 1)  # 0.15  #MARCUS: 2.8, 0.913921, 0.0, 1
+        self.vController.set_y_pid(1.0, 0.0, 0.0, 1)  # 2.1, 0.713921, 0.350178 #MARCUS: 2.8, 0.913921, 0.0, 1
+        self.vController.set_z_pid(1.0, 0.0, 0.0, 0.3)  # 0.15 #MARCUS: 1.3, 2.4893, 0.102084, 1
         # self.vController.set_yaw_pid(3.6,1.33333,0.1875,1)
-        self.vController.set_yaw_pid(1, 1.33333, 0.1875, 1)
+        self.vController.set_yaw_pid(1, 0, 0, 1)#1, 1.33333, 0.1875, 1
 
         print 'Init done'
         while not rospy.is_shutdown():
@@ -87,17 +93,19 @@ class position_control():
                 self._pose_pub.publish(self._pose_msg)
             elif self.current_mode.data == 'velctr':
                 self.vController.setTarget(self._vel_pose_msg.pose)
-                self.des_vel = self.vController.update(self.local_pose)
+                self.des_vel = self.vController.update(self.real_pose)
                 self._vel_pub.publish(self.des_vel)
+                self.pid_out_pub.publish(self.des_vel)
 
             elif self.current_mode.data == 'velposctr':
                 self.vController.setTarget(self._velpose_msg.pose)
-                self.des_velpos = self.vController.update(self.local_pose)
+                self.des_velpos = self.vController.update(self.real_pose)
                 self._velpose_pub.publish(self.des_velpos)
+                self.pid_out_pub.publish(self.des_velpos)
 
             else:
                 print "No such position mode"
-            self.real_local_pose.publish(self.actual_height)
+            self._real_pose.publish(self.real_pose)
             self.check_distance()
             self.get_angles()
             rate.sleep()
@@ -124,7 +132,9 @@ class position_control():
         # print(vel_pose.pose)
         self._vel_pose_msg.pose.position.x = self.local_pose.pose.position.x + vel_pose.pose.position.x
         self._vel_pose_msg.pose.position.y = self.local_pose.pose.position.y + vel_pose.pose.position.y
+
         self._vel_pose_msg.pose.position.z = vel_pose.pose.position.z
+        print(self._vel_pose_msg)
         # print(self._vel_pose_msg.pose)
         self._vel_pose_msg.pose.orientation.x = vel_pose.pose.orientation.x
         self._vel_pose_msg.pose.orientation.y = vel_pose.pose.orientation.y
@@ -143,6 +153,8 @@ class position_control():
 
     def _local_pose_callback(self, data):
         self.local_pose = data
+        self.real_pose = copy.deepcopy(self.local_pose)
+        self.real_pose.pose.position.z = self.actual_height
        
 
     def _local_velocity_callback(self, data):
@@ -159,16 +171,12 @@ class position_control():
         Z = self.local_imu.orientation.z
         W = self.local_imu.orientation.w
 
-       
-
-        roll = math.atan2(2 * (Y * Z + W * X), W * W - X * X - Y * Y + Z * Z)
-        pitch = math.asin(-2 * (X * Z - W * Y))
-
+        (roll, pitch, Yaw) = tf.transformations.euler_from_quaternion([X, Y, Z, W])
         Comp = -math.sin(pitch) * 0.22  # 0.22 = 22cm from rotation centrum
 
       
 
-        self.actual_height = (self.lidar_height * (math.cos(pitch) * math.cos(roll))) - Comp
+        self.actual_height = ((self.lidar_height * (math.cos(pitch) * math.cos(roll))) - Comp)-0.3
 
     def set_pose_callback(self, data):
         self.set_pose(data)
@@ -191,16 +199,20 @@ class position_control():
     def set_yaw_pid(self, data):
         self.vController.set_yaw_pid(data.x, data.y, data.z)
 
+    def set_xy_vel(self, data):
+        self.vController.set_xy_vel(data)
+    def set_z_vel(self, data):
+        self.vController.set_z_vel(data)
+
+
     def get_angles(self):
 
         X = self.local_imu.orientation.x
         Y = self.local_imu.orientation.y
         Z = self.local_imu.orientation.z
         W = self.local_imu.orientation.w
+        (roll, pitch, yaw) = tf.transformations.euler_from_quaternion([X, Y, Z, W])
 
-        yaw = math.asin(2 * X * Y + 2 * Z * W)
-        roll = math.atan2(2 * (Y * Z + W * X), W * W - X * X - Y * Y + Z * Z)
-        pitch = math.asin(-2 * (X * Z - W * Y))
 
         self.yawangle.publish(math.degrees(yaw))  # Yaw in degrees
         self.pitchangle.publish(math.degrees(pitch))  # Pitch in degrees
@@ -212,12 +224,8 @@ class position_control():
             boolvel = self.hover_velocity()
             self.dist.publish(booldist and boolvel)
         elif self.current_mode.data == 'velctr' or self.current_mode.data == 'velposctr':
-            vel_pose_tot = PoseStamped()
-            vel_pose_tot.pose.position.x = self._vel_pose_msg.pose.position.x
-            vel_pose_tot.pose.position.y = self._vel_pose_msg.pose.position.y
-            vel_pose_tot.pose.position.z = self._vel_pose_msg.pose.position.z
             # print("target vel_pos: {}".format(vel_pose_tot))
-            booldist = self.is_at_position(self.local_pose.pose.position, vel_pose_tot.pose.position, 0.2)
+            booldist = self.is_at_position(self.real_pose.pose.position, self._vel_pose_msg.pose.position, 0.2)
             boolvel = self.hover_velocity()
             self.dist.publish(booldist and boolvel)
 

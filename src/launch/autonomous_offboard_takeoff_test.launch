@@ -2,5 +2,5 @@
   <node name="position_control" pkg="autonomous_offboard" type="position_control.py" output="screen" />
   <node name="action_controller_takeoff_test" pkg="autonomous_offboard" type="action_controller_takeoff_test.py" output="screen" />
   <node name="goto_position_server" pkg="autonomous_offboard" type="goto_position_server.py" output="screen" />
-  <node name="takeoff_curr_server" pkg="autonomous_offboard" type="takeoff_curr_server.py" output="screen" />
+ <node name="goto_position_vel_server" pkg="autonomous_offboard" type="goto_position_vel_server.py" output="screen" />
 </launch>

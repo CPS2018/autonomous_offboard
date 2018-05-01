@@ -88,6 +88,11 @@ class VelocityController:
         self.yaw.setKi(ki)
         self.yaw.setKd(kd)
         self.yaw.setMaxO(output)
+    def set_xy_vel(self, output):
+        self.X.maxOut(output)
+        self.Y.maxOut(output)
+    def set_z_vel(self,output):
+        self.Z.maxOut(output)
 
 
 
