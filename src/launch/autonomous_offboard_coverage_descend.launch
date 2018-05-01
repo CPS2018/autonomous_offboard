@@ -1,0 +1,9 @@
+<launch>
+  <node name="position_control" pkg="autonomous_offboard" type="position_control.py" output="screen" />
+  <node name="action_controller_coverage_descend" pkg="autonomous_offboard" type="action_controller_coverage_descend.py" output="screen" />
+  <node name="goto_position_server" pkg="autonomous_offboard" type="goto_position_server.py" output="screen" />
+  <node name="goto_position_vel_server" pkg="autonomous_offboard" type="goto_position_vel_server.py" output="screen" />
+  <node name="tensorflow_detection" pkg="autonomous_offboard" type="tensorflow_hw_mvBlueFox_detection.py" output="screen" />
+  <node name="descend_on_object_server" pkg="autonomous_offboard" type="descend_on_object_server.py" output="screen" />
+  <node name="obstacle_detection_control" pkg="autonomous_offobard" type="obstacle_detection_control.py" output="screen" />
+</launch>
