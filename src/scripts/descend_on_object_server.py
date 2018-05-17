@@ -2,6 +2,8 @@
 import rospy
 import actionlib
 import autonomous_offboard.msg
+import tf
+import math
 from geometry_msgs.msg import PoseStamped, Point
 from std_msgs.msg import Bool, String, Float32
 import time
@@ -13,6 +15,11 @@ class descend_on_object_server():
         # variables
         self.local_pose = PoseStamped()
         self.des_pose = PoseStamped()
+        quaternion = tf.transformations.quaternion_from_euler(0, 0, math.radians(90))
+        des_pose.pose.orientation.x = quaternion[0]
+        des_pose.pose.orientation.y = quaternion[1]
+        des_pose.pose.orientation.z = quaternion[2]
+        des_pose.pose.orientation.w = quaternion[3]
         self.object_pose = Point()
         self.object_pose_center = Point()
 
@@ -102,7 +109,7 @@ class descend_on_object_server():
         print("Landing")
         self.des_pose.pose.position.x = 0
         self.des_pose.pose.position.y = 0
-        self.des_pose.pose.position.z = -0.1
+        self.des_pose.pose.position.z = -0.15
         self.vel_control.publish(self.des_pose)
         time.sleep(0.1)
         while not self.target_reached:

@@ -17,11 +17,11 @@ class coverage_server():
         self.cur_pose = PoseStamped()
         self.waypoints = np.empty((0,3))
         self.destination = PoseStamped()
-        self.angleOfViewWidth = 37
-        self.angleOfViewHeight = 47
-        self.areaWidth = 20
-        self.areaHeight = 20
-        self.searchHeight = 10
+        self.angleOfViewWidth = 37.0
+        self.angleOfViewHeight = 47.0
+        self.areaWidth = 20.0
+        self.areaHeight = 20.0
+        self.searchHeight = 10.0
         self.detectedPos = PoseStamped()
         self.detectedPos.pose.position.x = float("inf")
         self.result = autonomous_offboard.msg.coverageResult()
@@ -29,8 +29,9 @@ class coverage_server():
         rospy.Subscriber('/mavros/local_position/pose', PoseStamped, self.cur_pose_cb)
 
         self.set_xy_vel = rospy.Publisher('/position_control/set_xy_vel', Float32, queue_size=10)
+        self.position_publisher = rospy.Publisher('/coverage_server/position', PoseStamped, queue_size=10)
 
-        self.goto_position_client = actionlib.SimpleActionClient('goto_position', goto_position_velAction)
+        self.goto_position_client = actionlib.SimpleActionClient('goto_position_vel', goto_position_velAction)
         #self.detect_object_client = actionlib.SimpleActionClient('detect_object', detect_objectAction)
         self.rate = rospy.Rate(20)
         self.action_server = actionlib.SimpleActionServer('coverage',
@@ -43,6 +44,8 @@ class coverage_server():
         xyVel.data = 1
         self.set_xy_vel.publish(xyVel)
         goto_position_goal = goto_position_velGoal()
+        goto_position_goal.destination.pose.orientation.w = 0.707
+        goto_position_goal.destination.pose.orientation.z = 0.707
         self.goto_position_client.wait_for_server()
         #self.detect_object_client.wait_for_server()
         self.destination = goal.destination
@@ -52,6 +55,7 @@ class coverage_server():
             goto_position_goal.destination.pose.position.x = self.waypoints.item((idx, 0))
             goto_position_goal.destination.pose.position.y = self.waypoints.item((idx, 1))
             goto_position_goal.destination.pose.position.z = self.waypoints.item((idx, 2))
+            self.position_publisher.publish(self.cur_pose)
             self.goto_position_client.send_goal(goto_position_goal)
             self.goto_position_client.wait_for_result()
             idx = idx + 1
@@ -73,22 +77,22 @@ class coverage_server():
 
     #calculate waypoints
     def calculate_waypoints(self):
-        cameraWidth = 2 * self.searchHeight * math.tan(math.radians(self.angleOfViewWidth/2))
-        cameraHeight = 2 * self.searchHeight * math.tan(math.radians(self.angleOfViewHeight/2))
+        cameraWidth = 2 * self.searchHeight * math.tan(math.radians(self.angleOfViewWidth/2.0))
+        cameraHeight = 2 * self.searchHeight * math.tan(math.radians(self.angleOfViewHeight/2.0))
         lastWaypoint = PoseStamped()
-        lastWaypoint.pose.position.x = self.destination.pose.position.x - self.areaWidth/2
-        lastWaypoint.pose.position.y = self.destination.pose.position.y - self.areaHeight / 2
+        lastWaypoint.pose.position.x = self.destination.pose.position.x - self.areaWidth/2.0
+        lastWaypoint.pose.position.y = self.destination.pose.position.y - self.areaHeight / 2.0
         lastWaypoint.pose.position.z = self.searchHeight
         tempArr = []
         tempArr.append([lastWaypoint.pose.position.x, lastWaypoint.pose.position.y, lastWaypoint.pose.position.z])
-        while(lastWaypoint.pose.position.x + cameraWidth/2 < self.destination.pose.position.x + self.areaWidth/2):
+        while(lastWaypoint.pose.position.x + cameraWidth/2.0 < self.destination.pose.position.x + self.areaWidth/2.0):
             #check if going upwards or downwards
             if(cameraHeight > 0):
-                while(lastWaypoint.pose.position.y + cameraHeight/2 < self.destination.pose.position.y + self.areaHeight/2):
+                while(lastWaypoint.pose.position.y + cameraHeight/2.0 < self.destination.pose.position.y + self.areaHeight/2.0):
                     lastWaypoint.pose.position.y = lastWaypoint.pose.position.y + cameraHeight
                     tempArr.append([lastWaypoint.pose.position.x, lastWaypoint.pose.position.y, lastWaypoint.pose.position.z])
             elif(cameraHeight < 0):
-                while (lastWaypoint.pose.position.y + cameraHeight / 2 > self.destination.pose.position.y - self.areaHeight / 2):
+                while (lastWaypoint.pose.position.y + cameraHeight / 2.0 > self.destination.pose.position.y - self.areaHeight / 2.0):
                     lastWaypoint.pose.position.y = lastWaypoint.pose.position.y + cameraHeight
                     tempArr.append([lastWaypoint.pose.position.x, lastWaypoint.pose.position.y, lastWaypoint.pose.position.z])
 
@@ -101,10 +105,10 @@ class coverage_server():
 
     def calculate_waypoints2(self):
         tempArr = []
-        self.cameraWidth = 2 * self.searchHeight * math.tan(math.radians(self.angleOfViewWidth / 2))
-        self.cameraHeight = 2 * self.searchHeight * math.tan(math.radians(self.angleOfViewHeight / 2))
-        startPointX = self.destination.pose.position.x - self.areaWidth / 2 + self.cameraWidth / 2
-        startPointY = self.destination.pose.position.y - self.areaHeight / 2 + self.cameraHeight / 2
+        self.cameraWidth = 2.0 * self.searchHeight * math.tan(math.radians(self.angleOfViewWidth / 2.0))
+        self.cameraHeight = 2.0 * self.searchHeight * math.tan(math.radians(self.angleOfViewHeight / 2.0))
+        startPointX = self.destination.pose.position.x - self.areaWidth / 2.0 + self.cameraWidth / 2.0
+        startPointY = self.destination.pose.position.y - self.areaHeight / 2.0 + self.cameraHeight / 2.0
         self.nrOfStepsHeight = int(math.floor(self.areaHeight / self.cameraHeight))
         self.nrOfStepsWidth = int(math.floor(self.areaWidth / self.cameraWidth))
 

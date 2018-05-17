@@ -2,7 +2,7 @@
 import rospy
 import actionlib
 import autonomous_offboard.msg
-from std_msgs.msg import Bool, String
+from std_msgs.msg import Bool, String, Float32
 
 from geometry_msgs.msg import PoseStamped
 class goto_position_vel_server():
@@ -13,7 +13,6 @@ class goto_position_vel_server():
         #publishers
         self.pose_control = rospy.Publisher('/position_control/set_velocity', PoseStamped, queue_size=10)
         self.mode_control = rospy.Publisher('/position_control/set_mode', String, queue_size=10)
-
         #subscribers
         rospy.Subscriber('/position_control/distance', Bool, self.distance_reached_cb)
 

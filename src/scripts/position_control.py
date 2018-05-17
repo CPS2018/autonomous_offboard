@@ -223,9 +223,14 @@ class position_control():
             booldist = self.is_at_position(self.local_pose.pose.position, self._pose_msg.pose.position, 0.5)
             boolvel = self.hover_velocity()
             self.dist.publish(booldist and boolvel)
-        elif self.current_mode.data == 'velctr' or self.current_mode.data == 'velposctr':
+        elif self.current_mode.data == 'velctr':
             # print("target vel_pos: {}".format(vel_pose_tot))
             booldist = self.is_at_position(self.real_pose.pose.position, self._vel_pose_msg.pose.position, 0.2)
+            boolvel = self.hover_velocity()
+            self.dist.publish(booldist and boolvel)
+        elif self.current_mode.data == 'velposctr':
+            # print("target vel_pos: {}".format(vel_pose_tot))
+            booldist = self.is_at_position(self.real_pose.pose.position, self._velpose_msg.pose.position, 0.3)
             boolvel = self.hover_velocity()
             self.dist.publish(booldist and boolvel)
 

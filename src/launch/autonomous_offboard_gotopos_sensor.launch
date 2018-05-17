@@ -1,6 +1,6 @@
 <launch>
   <node name="position_control" pkg="autonomous_offboard" type="position_control.py" output="screen" />
   <node name="action_controllerGotopos_sensor" pkg="autonomous_offboard" type="action_controllerGotopos_sensor.py" output="screen" />
-  <node name="goto_position_server" pkg="autonomous_offboard" type="goto_position_server.py" output="screen" />
+  <node name="goto_position_vel_server" pkg="autonomous_offboard" type="goto_position_vel_server.py" output="screen" />
   <node name="gotoposition_sensor_server" pkg="autonomous_offboard" type="gotoposition_sensor_server.py" output="screen" />
 </launch>

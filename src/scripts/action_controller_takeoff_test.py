@@ -28,20 +28,20 @@ if __name__ == '__main__':
 
     rospy.loginfo("change true height position")
     goto_position_vel_goal.destination.pose.position.x = 0
-    goto_position_vel_goal.destination.pose.position.y = 0
-    goto_position_vel_goal.destination.pose.position.z = 7
+    goto_position_vel_goal.destination.pose.position.y = 5
+    goto_position_vel_goal.destination.pose.position.z = 5
     goto_position_vel_client.send_goal(goto_position_vel_goal)
     goto_position_vel_client.wait_for_result()
     rospy.loginfo("10 second sleep before landing")
     time.sleep(10)
-    rospy.loginfo("Landing")
-    goto_position_vel_goal.destination.pose.position.x = 0
-    goto_position_vel_goal.destination.pose.position.y = 0
-    goto_position_vel_goal.destination.pose.position.z = -0.1
-    goto_position_vel_client.send_goal(goto_position_vel_goal)
-    goto_position_vel_client.wait_for_result()
-    rospy.loginfo("Trying to land, 5 second sleep")
-    time.sleep(2)
+    #rospy.loginfo("Landing")
+    #goto_position_vel_goal.destination.pose.position.x = 0
+    #goto_position_vel_goal.destination.pose.position.y = 0
+    #goto_position_vel_goal.destination.pose.position.z = -0.1
+    #goto_position_vel_client.send_goal(goto_position_vel_goal)
+    #goto_position_vel_client.wait_for_result()
+    #rospy.loginfo("Trying to land, 2 second sleep")
+    #time.sleep(2)
 
-    mv_state.arm(False)
+    #mv_state.arm(False)
 

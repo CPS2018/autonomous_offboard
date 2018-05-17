@@ -13,33 +13,33 @@ from std_msgs.msg import Float32
 from geometry_msgs.msg import PoseStamped
 
 if __name__ == '__main__':
-    rospy.init_node('action_controller_descend')
+    rospy.init_node('action_coverage_descend')
     goto_position_vel_client = actionlib.SimpleActionClient('goto_position_vel', goto_position_velAction)
     goto_position_vel_client.wait_for_server()
     goto_position_vel_goal = goto_position_velGoal()
+    gotoposition_sensor_client = actionlib.SimpleActionClient('gotoposition_sensor', gotoposition_sensorAction)
+    gotoposition_sensor_client.wait_for_server()
+    gotoposition_sensor_goal = gotoposition_sensorGoal()
+    descend_on_object_client = actionlib.SimpleActionClient('descend_on_object', descend_on_objectAction)
+    descend_on_object_client.wait_for_server()
+    descend_on_object_goal = descend_on_objectGoal()
     mv_state = mavros_state.mavros_state()
     print 'Setting offboard'
     mv_state.set_mode('OFFBOARD')
     print 'Arming vehicle'
-    print 'Takeoff'
     mv_state.arm(True)
-    print 'Sleeping 20 sec'
-    time.sleep(20)
+    rospy.loginfo("Taking off")
+    time.sleep(10)
 
     rospy.loginfo("Detect position")
-    goto_position_vel_goal.destination.pose.position.x = 4
-    goto_position_vel_goal.destination.pose.position.y = 0
-    goto_position_vel_goal.destination.pose.position.z = 3
-    goto_position_vel_client.send_goal(goto_position_vel_goal)
-    goto_position_vel_client.wait_for_result()
+    gotoposition_sensor_goal.destination.pose.position.x = 20.5
+    gotoposition_sensor_goal.destination.pose.position.y = 45
+    gotoposition_sensor_goal.destination.pose.position.z = 5
+    gotoposition_sensor_client.send_goal(gotoposition_sensor_goal)
+    gotoposition_sensor_client.wait_for_result()
 
-    time.sleep(2)
-    
     rospy.loginfo("Descending on object")
-    descend_on_object_client = actionlib.SimpleActionClient('descend_on_object', descend_on_objectAction)
-    descend_on_object_client.wait_for_server()
     rospy.loginfo("Descending server started")
-    descend_on_object_goal = descend_on_objectGoal()
     descend_on_objectGoal = 2.0
     descend_on_object_client.send_goal(descend_on_object_goal)
     descend_on_object_client.wait_for_result()
@@ -49,40 +49,37 @@ if __name__ == '__main__':
     else:
         rospy.loginfo("Couldnt land exiting")
 
-    # time.sleep(3)
-    #
-    # print 'Setting offboard'
-    # mv_state.set_mode('OFFBOARD')
-    # print 'Arming vehicle'
-    # mv_state.arm(True)
-    #
-    # time.sleep(5)
-    #
-    # rospy.loginfo("Takeoff")
-    # goto_position_goal.destination.pose.position.x = 0
-    # goto_position_goal.destination.pose.position.y = 0
-    # goto_position_goal.destination.pose.position.z = 3
-    # goto_position_client.send_goal(goto_position_goal)
-    # goto_position_client.wait_for_result()
-    #
-    # time.sleep(5)
-    #
-    # rospy.loginfo("Going Home")
-    # goto_position_goal.destination.pose.position.x = -5
-    # goto_position_goal.destination.pose.position.y = 0
-    # goto_position_goal.destination.pose.position.z = 3
-    # goto_position_client.send_goal(goto_position_goal)
-    # goto_position_client.wait_for_result()
-    #
-    # time.sleep(5)
-    #
-    # rospy.loginfo("Landing")
-    # goto_position_vel_goal.destination.pose.position.x = 0
-    # goto_position_vel_goal.destination.pose.position.y = 0
-    # goto_position_vel_goal.destination.pose.position.z = -0.1
-    # goto_position_vel_client.send_goal(goto_position_vel_goal)
-    # goto_position_vel_client.wait_for_result()
-    # rospy.loginfo("Trying to land, 10 second sleep")
-    # time.sleep(10)
-    #
-    # mv_state.arm(False)
+    time.sleep(3)
+
+    print 'Setting offboard'
+    mv_state.set_mode('OFFBOARD')
+    print 'Arming vehicle'
+    mv_state.arm(True)
+
+    time.sleep(3)
+
+    rospy.loginfo("Get some height")
+    goto_position_vel_goal.destination.pose.position.x = 0
+    goto_position_vel_goal.destination.pose.position.y = 0
+    goto_position_vel_goal.destination.pose.position.z = 5
+    goto_position_vel_client.send_goal(goto_position_vel_goal)
+    goto_position_client.wait_for_result()
+
+    time.sleep(3)
+    rospy.loginfo("Going home")
+    gotoposition_sensor_goal.destination.pose.position.x = 0
+    gotoposition_sensor_goal.destination.pose.position.y = 0
+    gotoposition_sensor_goal.destination.pose.position.z = 5
+    gotoposition_sensor_client.send_goal(gotoposition_sensor_goal)
+    gotoposition_sensor_client.wait_for_result()
+
+    time.sleep(3)
+
+    rospy.loginfo("Get some height")
+    goto_position_vel_goal.destination.pose.position.x = 0
+    goto_position_vel_goal.destination.pose.position.y = 0
+    goto_position_vel_goal.destination.pose.position.z = -0.25
+    goto_position_vel_client.send_goal(goto_position_vel_goal)
+    goto_position_client.wait_for_result()
+
+

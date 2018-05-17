@@ -25,7 +25,16 @@ if __name__ == '__main__':
     time.sleep(10)
 
     rospy.loginfo("First position")
-    goto_position_vel_goal.destination.pose.position.x = 5
+    goto_position_vel_goal.destination.pose.position.x = 0
+    goto_position_vel_goal.destination.pose.position.y = 0
+    goto_position_vel_goal.destination.pose.position.z = 3
+    goto_position_vel_client.send_goal(goto_position_vel_goal)
+    goto_position_vel_client.wait_for_result()
+
+    time.sleep(10)
+
+    rospy.loginfo("First position")
+    goto_position_vel_goal.destination.pose.position.x = 10
     goto_position_vel_goal.destination.pose.position.y = 0
     goto_position_vel_goal.destination.pose.position.z = 3
     goto_position_vel_client.send_goal(goto_position_vel_goal)
@@ -35,15 +44,6 @@ if __name__ == '__main__':
 
     rospy.loginfo("Second position")
     goto_position_vel_goal.destination.pose.position.x = 0
-    goto_position_vel_goal.destination.pose.position.y = -5
-    goto_position_vel_goal.destination.pose.position.z = 3
-    goto_position_vel_client.send_goal(goto_position_vel_goal)
-    goto_position_vel_client.wait_for_result()
-
-    time.sleep(10)
-
-    rospy.loginfo("Third position")
-    goto_position_vel_goal.destination.pose.position.x = -5
     goto_position_vel_goal.destination.pose.position.y = 0
     goto_position_vel_goal.destination.pose.position.z = 3
     goto_position_vel_client.send_goal(goto_position_vel_goal)
@@ -51,13 +51,13 @@ if __name__ == '__main__':
 
     time.sleep(10)
 
-    rospy.loginfo("Fourth position")
+    rospy.loginfo("Landing")
     goto_position_vel_goal.destination.pose.position.x = 0
-    goto_position_vel_goal.destination.pose.position.y = 5
-    goto_position_vel_goal.destination.pose.position.z = 3
+    goto_position_vel_goal.destination.pose.position.y = 0
+    goto_position_vel_goal.destination.pose.position.z = -0.15
     goto_position_vel_client.send_goal(goto_position_vel_goal)
     goto_position_vel_client.wait_for_result()
+    rospy.loginfo("Trying to land, 2 second sleep")
+    time.sleep(2)
 
-    time.sleep(10)
-
-    mv_state.land(0.0)
+    mv_state.arm(False)

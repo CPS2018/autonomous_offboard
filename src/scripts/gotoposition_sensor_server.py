@@ -23,6 +23,7 @@ class gotoposition_sensor_server():
         self.avoid_pose = PoseStamped()
         self.goal_pose = PoseStamped()
         self.distance = Float32()
+        self.target_reached = False
         self.yaw = Float32()
 
 
@@ -32,12 +33,12 @@ class gotoposition_sensor_server():
         self.vel_control = rospy.Publisher('/position_control/set_velocity', PoseStamped, queue_size=10)
         self.velpose_control = rospy.Publisher('/position_control/set_velocityPose',PoseStamped,queue_size=10)
 
+
         # ---------------Subscribers---------------#
 
         rospy.Subscriber('/position_control/distance', Bool, self.distance_reached_cb)
         rospy.Subscriber('/position_control/Real_pose', PoseStamped, self._Real_pose_callback)
         rospy.Subscriber('/position_control/set_mode', String, self.set_mode_callback)
-        rospy.Subscriber('/position_control/Yawangle', Float32, self.yaw_callback)
 
         # ---------------Start---------------#
         self.rate = rospy.Rate(20)
@@ -46,19 +47,16 @@ class gotoposition_sensor_server():
         self.action_server.start()
 
     def execute_cb(self, goal):
-
         #Set the orientation before start in position mode.
         self.mode_control.publish('velposctr')
-        Azimut = math.atan2(goal.destination.pose.position.y - self.Real_pose.pose.position.y,
-                             goal.destination.pose.position.x - self.Real_pose.pose.position.x)
-        quaternion = tf.transformations.quaternion_from_euler(0, 0, Azimut)
+        quaternion = tf.transformations.quaternion_from_euler(0, 0, math.radians(90))
         goal.destination.pose.orientation.x = quaternion[0]
         goal.destination.pose.orientation.y = quaternion[1]
         goal.destination.pose.orientation.z = quaternion[2]
         goal.destination.pose.orientation.w = quaternion[3]
         self.goal_pose = goal.destination
         self.velpose_control.publish(goal.destination)
-
+        rospy.sleep(0.1)
 
         while not self.target_reached:
             self.rate.sleep()
@@ -79,8 +77,7 @@ class gotoposition_sensor_server():
         self.current_mode = data
 
 
-    def yaw_callback(self,data):
-        self.yaw = data
+   
 
 
 

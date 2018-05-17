@@ -6,8 +6,8 @@ import rospy
 # Ros Messages
 from sensor_msgs.msg import CompressedImage, Image
 from cv_bridge import CvBridge, CvBridgeError
-from geometry_msgs.msg import Point
-
+from geometry_msgs.msg import Point, PoseStamped
+from std_msgs.msg import Bool
 #Tensorflow imports
 import numpy as np
 import os
@@ -29,7 +29,7 @@ from stuff.helper import FPS2, WebcamVideoStream, SessionWorker
 
 import time
 import sys
-sys.path.insert(0, '/home/nvidia/catkin_ws/src/autonomous_offboard/src/scripts/')
+sys.path.insert(0, '/home/pateman/catkin_ws/src/autonomous_offboard/src/scripts')
 
 ## LOAD CONFIG PARAMS ##
 if (os.path.isfile('/home/nvidia/catkin_ws/src/autonomous_offboard/src/scripts/config.yml')):
@@ -58,16 +58,33 @@ ssd_shape           = cfg['ssd_shape']
 class tensorflow_detection:
     def __init__(self):
 
+        self.quad_3d_frame = np.float32([[-0.345, -0.345, 0], [0.345, -0.345, 0], [0.345, 0.345, 0], [-0.345, 0.345, 0]])
+        self.quad_3d_center = np.float32([[-0.11075, -0.11075, 0], [0.11075, -0.11075, 0], [0.11075, 0.11075, 0], [-0.11075, 0.11075, 0]])
+        #----REAL---
+        self.K = np.float64([[1168.084098028661, 0, 545.2679414486556],
+                        [0, 1164.433590234314, 526.4386170901346],
+                        [0.0, 0.0, 1.0]])
+        # ----GAZEBO---
+        #self.K = np.float64([[1472.512772, 0, 640.5],
+        #                [0, 1472.512772, 480.5],
+        #                [0.0, 0.0, 1.0]])
+        self.dist_coef = np.float64([-0.06624560142145453, 0.05966170895627322, 0.002933236970742761, -0.01336570576300551, 0])
         self.detection_graph, score, expand = self.load_frozenmodel()
         self.category_index = self.load_labelmap()
         config = tf.ConfigProto(allow_soft_placement=True, log_device_placement=log_device)
         config.gpu_options.allow_growth = allow_memory_growth
+        self.target_reached = False
+        self.local_pose = PoseStamped()
         cur_frames = 0
+        self.write_flag = False
+        self.write_flag_center = False
+        self.countDet = 0
+        self.countDet_center = 0
         with self.detection_graph.as_default():
             with tf.Session(graph=self.detection_graph, config=config) as self.sess:
                 self.cam_read = Image()
                 # topic where we publish
-                #self.image_pub = rospy.Publisher("/tensorflow_detection/image", Image, queue_size=10)
+                self.image_pub = rospy.Publisher("/tensorflow_detection/image", Image, queue_size=10)
                 self.bridge = CvBridge()
                 # topic where the coordinates go
                 self.cam_pose_pub = rospy.Publisher("/tensorflow_detection/cam_point", Point, queue_size=1)
@@ -76,13 +93,20 @@ class tensorflow_detection:
                 self.cam_pose_center = Point()
                 # subscribed Topic
                 self.subscriber = rospy.Subscriber("/mv_29901972/image_raw", Image, self.callback, queue_size=1)
-
-                #self.detection(graph, category, score, expand)
+                #self.subscriber = rospy.Subscriber("/uav_camera/image_raw_down", Image, self.callback, queue_size=1)
+                #rospy.Subscriber('/position_control/distance', Bool, self.distance_reached_cb)
+                #rospy.Subscriber('/mavros/local_position/pose', PoseStamped, self._local_pose_callback)
+                #self.positioning_file = open("/home/pateman/catkin_ws/src/autonomous_offboard/src/positioning_data.txt",
+                #    "w")
 
                 self.threshold = 0.6
 
-
+    def distance_reached_cb(self, data):
+        self.target_reached = data.data
+    def _local_pose_callback(self, data):
+        self.local_pose = data
     def callback(self, ros_data):
+
 
         try:
             cv_image = self.bridge.imgmsg_to_cv2(ros_data, "bgr8")
@@ -114,7 +138,10 @@ class tensorflow_detection:
         for i in range(0, num):
             score = scores[0][i]
             if score >= self.threshold:
-                print(int(classes[0][i]))
+                #if (self.target_reached == False):
+                #    self.write_flag = False
+                #    self.write_flag_center = False
+                #print(int(classes[0][i]))
                 #if the whole frame is detected
                 if int(classes[0][i]) == 1:
                     frame_flag_detected = True
@@ -153,22 +180,18 @@ class tensorflow_detection:
             self.cam_pose_center.y = float("inf")
             self.cam_pose_center.z = float("inf")
             self.cam_pose_center_pub.publish(self.cam_pose_center)
-        #try:
-        #    self.image_pub.publish(self.bridge.cv2_to_imgmsg(cv_image, "bgr8"))
-        #except CvBridgeError as e:
-        #    print(e)
+        try:
+            self.image_pub.publish(self.bridge.cv2_to_imgmsg(cv_image, "bgr8"))
+        except CvBridgeError as e:
+            print(e)
     def find_relative_pose(self, x, y, w, h):
-        quad_3d = np.float32([[-0.345, -0.345, 0], [0.345, -0.345, 0], [0.345, 0.345, 0], [-0.345, 0.345, 0]])
-        quad = np.float32(
-            [[x - w / 2, y - h / 2], [x - w / 2, y + h / 2], [x + w / 2, y + h / 2], [x + w / 2, y - h / 2]])
-
-        K = np.float64([[1472.512772, 0, 640.5],
-                        [0, 1472.512772, 480.5],
-                        [0.0, 0.0, 1.0]])
-
-
-        dist_coef = np.zeros(4)
-        _ret, rvec, tvec = cv2.solvePnP(quad_3d, quad, K, dist_coef)
+        #-----GAZEBO-----#
+        #quad = np.float32(
+        #    [[x - w / 2, y - h / 2], [x - w / 2, y + h / 2], [x + w / 2, y + h / 2], [x + w / 2, y - h / 2]])
+        #-------REAL--------#
+        quad = np.float32([[x - w / 2, y - h / 2], [x + w / 2, y - h / 2], [x + w / 2, y + h / 2], [x - w / 2, y + h / 2]])
+        #dist_coef_zero = np.zeros(4)
+        _ret, rvec, tvec = cv2.solvePnP(self.quad_3d_frame, quad, self.K, self.dist_coef)
         rmat = cv2.Rodrigues(rvec)[0]
         #self.rotationMatrixToEulerAngles(rmat)
         cameraTranslatevector = -np.matrix(rmat).T * np.matrix(tvec)
@@ -177,26 +200,32 @@ class tensorflow_detection:
         T0[:3, :3] = rmat
         T0[:4, 3] = [0, 0, 0, 1]
         T0[:3, 3] = np.transpose(cameraTranslatevector)
-
-        p0 = np.array([-0.345 / 2, -0.3011 / 2, 0, 1])
+        ####----REAL----####
+        p0 = np.array([0.300 / 2, -0.345 / 2, 0, 1])
+        ###-----GAZEBO----#
+        #p0 = np.array([-0.345 / 2, -0.345 / 2, 0, 1])
         z0 = np.dot(T0, p0)
 
-        self.cam_pose.x = z0.item(0)
+        self.cam_pose.x = -z0.item(0)
         self.cam_pose.y = z0.item(1)
         self.cam_pose.z = z0.item(2)
+        #if (self.target_reached and self.write_flag == False):
+        #    self.positioning_file.write(
+        #        "Frame: Local position: [{}, {}, {}], Object position: [5, 5, 0], positioning: [{}, {}, {}], count: {}\n".format(
+        #            self.local_pose.pose.position.x, self.local_pose.pose.position.y, self.local_pose.pose.position.z,
+        #            self.cam_pose.x, self.cam_pose.y, self.cam_pose.z, self.countDet))
+        #    self.write_flag = True
+        #    self.countDet += 1
         self.cam_pose_pub.publish(self.cam_pose)
     def find_relative_pose_center(self, x, y, w, h):
-        quad_3d = np.float32([[-0.11075, -0.11075, 0], [0.11075, -0.11075, 0], [0.11075, 0.11075, 0], [-0.11075, 0.11075, 0]])
+        # -------GAZEBO--------#
+        #quad = np.float32(
+        #    [[x - w / 2, y - h / 2], [x - w / 2, y + h / 2], [x + w / 2, y + h / 2], [x + w / 2, y - h / 2]])
+        # -------REAL--------#
         quad = np.float32(
-            [[x - w / 2, y - h / 2], [x - w / 2, y + h / 2], [x + w / 2, y + h / 2], [x + w / 2, y - h / 2]])
-
-        K = np.float64([[1472.512772, 0, 640.5],
-                        [0, 1472.512772, 480.5],
-                        [0.0, 0.0, 1.0]])
-
-
-        dist_coef = np.zeros(4)
-        _ret, rvec, tvec = cv2.solvePnP(quad_3d, quad, K, dist_coef)
+            [[x - w / 2, y - h / 2], [x + w / 2, y - h / 2], [x + w / 2, y + h / 2], [x - w / 2, y + h / 2]])
+        #dist_coef_zero = np.zeros(4)
+        _ret, rvec, tvec = cv2.solvePnP(self.quad_3d_center, quad, self.K, self.dist_coef)
         rmat = cv2.Rodrigues(rvec)[0]
         #self.rotationMatrixToEulerAngles(rmat)
         cameraTranslatevector = -np.matrix(rmat).T * np.matrix(tvec)
@@ -205,13 +234,22 @@ class tensorflow_detection:
         T0[:3, :3] = rmat
         T0[:4, 3] = [0, 0, 0, 1]
         T0[:3, 3] = np.transpose(cameraTranslatevector)
-
-        p0 = np.array([-0.2215 / 2, -0.2061 / 2, 0, 1])
+        ####----REAL----####
+        p0 = np.array([0.200 / 2, -0.100 / 2, 0, 1])
+        ####----GAZEBO----####
+        #p0 = np.array([-0.11075 / 2, -0.11075 / 2, 0, 1])
         z0 = np.dot(T0, p0)
 
-        self.cam_pose_center.x = z0.item(0)
+        self.cam_pose_center.x = -z0.item(0)
         self.cam_pose_center.y = z0.item(1)
         self.cam_pose_center.z = z0.item(2)
+        #if (self.target_reached and self.write_flag_center == False):
+        #    self.positioning_file.write(
+        #        "Center: Local position: [{}, {}, {}], Object position: [5, 5, 0], positioning: [{}, {}, {}], count: {}\n".format(
+        #            self.local_pose.pose.position.x, self.local_pose.pose.position.y, self.local_pose.pose.position.z,
+        #            self.cam_pose.x, self.cam_pose.y, self.cam_pose.z, self.countDet_center))
+        #    self.write_flag_center = True
+        #    self.countDet_center += 1
         self.cam_pose_center_pub.publish(self.cam_pose_center)
 
     def isRotationMatrix(self,R):
@@ -357,6 +395,7 @@ def main():
 
 if __name__ == '__main__':
     main()
+
 
 
 
