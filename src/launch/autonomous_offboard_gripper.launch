@@ -1,0 +1,3 @@
+<launch>
+  <node name="action_controller_gripper" pkg="autonomous_offboard" type="action_controller_gripper.py" output="screen" />
+</launch>

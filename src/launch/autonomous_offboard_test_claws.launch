@@ -1,0 +1,3 @@
+<launch>
+  <node name="action_controller_claws" pkg="autonomous_offboard" type="action_controller_test_claws.py" output="screen" />
+</launch>
